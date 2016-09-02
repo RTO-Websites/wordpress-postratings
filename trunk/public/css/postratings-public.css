@@ -1,0 +1,32 @@
+/**
+ * All of the CSS for your public-facing functionality should be
+ * included in this file.
+ */
+
+.postrating-star {
+  display: inline-block;
+  position:relative;
+  width: 30px;
+  height: 30px;
+  padding: 0 3px;
+  font-family: dashicons;
+  cursor: pointer;
+}
+
+.postrating-star:after {
+  content: "\f154";
+}
+
+.postrating-star-threequarter:after,
+.postrating-star-half:after {
+  content: "\f459";
+}
+
+.postrating-star-full:after {
+  content: "\f155";
+}
+
+.postrating-star.hover:after {
+  content: "\f155";
+  color: black;
+}
