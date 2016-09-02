@@ -145,12 +145,13 @@ class PostratingsPublic {
          * class.
          */
 
-        wp_enqueue_script( $this->pluginName, plugin_dir_url( __FILE__ ) . 'js/postratings-public.js', array( 'jquery' ), $this->version, false );
+        if (is_user_logged_in() || empty( $this->options['onlyLoggedIn'] )) {
+            wp_enqueue_script( $this->pluginName, plugin_dir_url( __FILE__ ) . 'js/postratings-public.js', array( 'jquery' ), $this->version, false );
 
-        wp_localize_script( $this->pluginName, $this->pluginName, array(
-            'adminAjax' => admin_url( 'admin-ajax.php' ),
-        ) );
-
+            wp_localize_script( $this->pluginName, $this->pluginName, array(
+                'adminAjax' => admin_url( 'admin-ajax.php' ),
+            ) );
+        }
     }
 
 }
