@@ -12,17 +12,17 @@ use Inc\PostratingsDeactivator;
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://github.com/crazypsycho/wordpress-postratings
+ * @link              https://github.com/RTO-Websites/wordpress-postratings
  * @since             1.0.0
  * @package           Postratings
  *
  * @wordpress-plugin
  * Plugin Name:       PostRatings
- * Plugin URI:        https://github.com/crazypsycho/wordpress-postratings
+ * Plugin URI:        https://github.com/RTO-Websites/wordpress-postratings
  * Description:       Simple plugin to add star-rating to posts
  * Version:           1.0.0
- * Author:            crazypsycho
- * Author URI:        https://github.com/crazypsycho
+ * Author:            rtowebsites
+ * Author URI:        https://www.rto.de
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       postratings
