@@ -262,4 +262,12 @@ class Postratings {
         return $this->version;
     }
 
+
+    public static function getOptions() {
+        return array(
+            'onlyLoggedIn' => get_theme_mod( 'postratings_onlyLoggedIn', false ),
+            'noDashicons' => get_theme_mod( 'postratings_noDashicons', false ),
+            'noDefaultStyle' => get_theme_mod( 'postratings_noDefaultStyle', false ),
+        );
+    }
 }

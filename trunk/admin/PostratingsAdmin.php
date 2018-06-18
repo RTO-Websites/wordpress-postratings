@@ -9,8 +9,11 @@
  * @package    Postratings
  * @subpackage Postratings/admin
  */
+
+
+include_once( 'PostratingsThemeCustomizer.php' );
+
 use Inc\Postratings;
-use MagicAdminPage\MagicAdminPage;
 
 /**
  * The admin-specific functionality of the plugin.
@@ -51,6 +54,7 @@ class PostratingsAdmin {
      */
     private $options;
 
+    private static $instance;
 
     /**
      * Initialize the class and set its properties.
@@ -60,12 +64,28 @@ class PostratingsAdmin {
      * @param      string $version The version of this plugin.
      */
     public function __construct( $pluginName, $version ) {
+        self::$instance = $this;
 
         $this->pluginName = $pluginName;
         $this->version = $version;
-        $this->options = MagicAdminPage::getOption( 'post-ratings' );
+        $this->options =  Postratings::getOptions();
+        // add options to customizer
+        add_action( 'customize_register', array( new \PostratingsThemeCustomizer(), 'actionCustomizeRegister' ) );
 
-        $postgratingsPage = new MagicAdminPage(
+        // add menu page to link to customizer
+        add_action( 'admin_menu', function () {
+            $returnUrl = urlencode( $_SERVER['REQUEST_URI'] );
+            \add_menu_page(
+                'PostRatings',
+                'PostRatings',
+                'edit_theme_options',
+                'customize.php?return=' . $returnUrl . '&autofocus[panel]=postratings-panel',
+                null,
+                'dashicons-star-half'
+            );
+        } );
+
+        /* $postgratingsPage = new MagicAdminPage(
             'post-ratings',
             'PostRatings',
             'PostRatings',
@@ -96,7 +116,7 @@ class PostratingsAdmin {
                 'title' => __( 'Don´t load default styles', $this->textdomain ),
                 'default' => false,
             ),
-        ) );
+        ) ); */
 
 
         // Register ajax
@@ -228,4 +248,12 @@ class PostratingsAdmin {
 
     }
 
+    static function getInstance() {
+        // If the single instance hasn't been set, set it now.
+        if ( null == self::$instance ) {
+            self::$instance = new self;
+        }
+
+        return self::$instance;
+    }
 }

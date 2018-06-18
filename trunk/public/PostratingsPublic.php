@@ -10,7 +10,6 @@
      * @subpackage Postratings/public
      */
 use Inc\Postratings;
-use MagicAdminPage\MagicAdminPage;
 
 /**
  * The public-facing functionality of the plugin.
@@ -62,7 +61,7 @@ class PostratingsPublic {
 
         $this->pluginName = $pluginName;
         $this->version = $version;
-        $this->options = MagicAdminPage::getOption( 'post-ratings' );
+        $this->options =  Postratings::getOptions();
 
         add_shortcode( 'postrating', array( $this, 'postratingsShortcode' ) );
         add_shortcode( 'postratings', array( $this, 'postratingsShortcode' ) );
