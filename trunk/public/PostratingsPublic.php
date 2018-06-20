@@ -1,14 +1,15 @@
 <?php namespace Pub;
 
-    /**
-     * The public-facing functionality of the plugin.
-     *
-     * @link       https://github.com/crazypsycho
-     * @since      1.0.0
-     *
-     * @package    Postratings
-     * @subpackage Postratings/public
-     */
+/**
+ * The public-facing functionality of the plugin.
+ *
+ * @link       https://github.com/crazypsycho
+ * @since      1.0.0
+ *
+ * @package    Postratings
+ * @subpackage Postratings/public
+ */
+use Admin\PostratingsAdmin;
 use Inc\Postratings;
 
 /**
@@ -61,16 +62,183 @@ class PostratingsPublic {
 
         $this->pluginName = $pluginName;
         $this->version = $version;
-        $this->options =  Postratings::getOptions();
+        $this->options = Postratings::getOptions();
+
+        // generate field-key from sanitized label
+        foreach ( $this->options['commentFields'] as $orgKey => $label ) {
+            if ( empty( $label ) ) {
+                continue;
+            }
+            $key = sanitize_key( $label );
+            $this->options['commentFields'][$key] = $label;
+            unset( $this->options['commentFields'][$orgKey] );
+        }
 
         add_shortcode( 'postrating', array( $this, 'postratingsShortcode' ) );
         add_shortcode( 'postratings', array( $this, 'postratingsShortcode' ) );
 
+        if ( true || !empty( $this->options['appendToComments'] ) ) {
+            add_action( 'comment_form_after_fields', array( $this, 'appendStarsToCommentForm' ) );
+            add_action( 'comment_form_logged_in_after', array( $this, 'appendStarsToCommentForm' ) );
+            //add_filter( 'comment_form_defaults', array( $this, 'addHiddenInputToCommentForm' ) );
+            add_action( 'comment_form_after_fields', array( $this, 'addHiddenInputToCommentForm' ) );
+            add_action( 'comment_form_logged_in_after', array( $this, 'addHiddenInputToCommentForm' ) );
+
+            add_action( 'comment_post', array( $this, 'saveComment' ) );
+
+            add_filter( 'comment_text', array( $this, 'addRatingsToComment' ), 100 );
+        }
     }
 
-    public function postratingsShortcode( $args, $content = '' ) {
+    /**
+     * Add rating result to a comment
+     *
+     * @param $content
+     * @param null $comment
+     * @param array $args
+     * @return string
+     */
+    public function addRatingsToComment( $content, $comment = null, $args = [] ) {
+        $ratings = get_comment_meta( get_comment_ID(), 'postrating', true );
+
+        if ( empty( $ratings ) ) {
+            return $content;
+        }
+
+        $output = '';
+        $ratings = json_decode( $ratings );
+
+        if ( !empty( $this->options['showCommentSummary'] ) ) {
+            $ratings->Summary = [ 'count' => 0, 'rating' => 0 ];
+        }
+
+        foreach ( $ratings as $key => $rating ) {
+            $label = !empty( $this->options['commentFields'][$key] ) ? $this->options['commentFields'][$key] : __( $key );
+
+            if ( is_array( $rating ) && !empty( $rating['count'] ) ) {
+                $rating = $rating['rating'] / $rating['count'];
+            }
+
+            $output .= '<div class="postrating-field">';
+            $output .= '<div class="postrating-label">' . $label . '</div>';
+            $output .= '<div class="postratings no-action">';
+            $output .= Postratings::getStarHtml( array(
+                'ratingResult' => $rating,
+            ) );
+            $output .= '</div>';
+            $output .= '</div>';
+
+            if ( isset( $ratings->Summary ) ) {
+                $ratings->Summary['count'] += 1;
+                $ratings->Summary['rating'] += $rating;
+            }
+        }
+
+        return $output . $content;
+
+    }
+
+    /**
+     * Caller for Admin-SaveRating
+     *
+     * @param $values
+     */
+    public function saveRating( $values ) {
+        ob_start();
+        PostratingsAdmin::getInstance()->saveRating( $values, true );
+        ob_clean();
+    }
+
+    /**
+     * Saves rating from comment
+     *
+     * @param $commentId
+     */
+    public function saveComment( $commentId ) {
+        $json = filter_input( INPUT_POST, 'postrating-values' );
+        if ( empty( $json ) ) {
+            return;
+        }
+        $newRatings = json_decode( $json );
+
+        foreach ( $newRatings as $key => $value ) {
+            $this->saveRating( array(
+                'postId' => filter_input( INPUT_POST, 'comment_post_ID' ),
+                'ratingKey' => $key,
+                'rating' => $value,
+            ) );
+
+            add_comment_meta( $commentId, 'postrating', $json );
+        }
+    }
+
+    /**
+     * Adds a hidden field to comment-form.
+     * Will be filled with values from rating
+     *
+     * @param $default#
+     */
+    public function addHiddenInputToCommentForm( $default ) {
+        //$commenter = wp_get_current_commenter();
+        //$default['fields']['postratings'] = '<input type="hidden" name="postrating-comment" />';
+        echo '<input type="hidden" name="postrating-values" class="postrating-values" />';
+        //return $default;
+    }
+
+    /**
+     * Append the stars to comment-form
+     */
+    public function appendStarsToCommentForm() {
+        $questions = $this->options['commentFields'];
+        $output = '';
+
+        foreach ( $questions as $label ) {
+            if ( empty( $label ) ) {
+                continue;
+            }
+            $key = sanitize_key( $label );
+
+            $output .= '<div class="postrating-field">';
+            $output .= '<div class="postrating-label">' . $label . '</div>';
+            $output .= do_shortcode( '[postrating key=' . $key . ' nosubmit value=1]' );
+            $output .= '</div>';
+        }
+
+        echo $output;
+    }
+
+    /**
+     * Shortcode to add stars
+     *  Args:
+     *   key (for more than one field)
+     *   nosubmit: disable ajax-submit
+     *
+     * @param $args
+     * @param string $content
+     * @return string
+     */
+    public function postratingsShortcode( $args = array(), $content = '' ) {
+        if ( empty( $args ) ) {
+            $args = array();
+        }
         $postId = $this->getPostIdFromArgs( $args );
-        $rating = Postratings::getRating( $postId );
+        $isSummaray = in_array( 'summary', $args, true );
+        $key = !empty( $args['key'] ) ? $args['key'] : '';
+        $rating = Postratings::getRating( $postId, $key, $isSummaray );
+        $rating['class'] = '';
+
+        if ( in_array( 'nosubmit', $args, true ) ) {
+            $rating['class'] = ' no-submit';
+        }
+        if ( in_array( 'noaction', $args, true )
+            || $isSummaray
+        ) {
+            $rating['class'] .= ' no-action';
+        }
+
+        if ( isset( $args['value'] ) ) {
+            $rating['ratingResult'] = $args['value'];
+        }
 
         return Postratings::getResultHtml( $rating );
     }
@@ -116,11 +284,11 @@ class PostratingsPublic {
          * class.
          */
 
-        if (empty($this->options['noDefaultStyle'])) {
+        if ( empty( $this->options['noDefaultStyle'] ) ) {
             wp_enqueue_style( $this->pluginName, plugin_dir_url( __FILE__ ) . 'css/postratings-public.css', array(), $this->version, 'all' );
         }
 
-        if (empty($this->options['noDashicons'])) {
+        if ( empty( $this->options['noDashicons'] ) ) {
             wp_enqueue_style( 'dashicons' );
         }
     }
@@ -144,7 +312,7 @@ class PostratingsPublic {
          * class.
          */
 
-        if (is_user_logged_in() || empty( $this->options['onlyLoggedIn'] )) {
+        if ( is_user_logged_in() || empty( $this->options['onlyLoggedIn'] ) ) {
             wp_enqueue_script( $this->pluginName, plugin_dir_url( __FILE__ ) . 'js/postratings-public.js', array( 'jquery' ), $this->version, false );
 
             wp_localize_script( $this->pluginName, $this->pluginName, array(

@@ -82,8 +82,32 @@ class Postratings {
     }
 
 
-    public static function getRating( $postId ) {
-        $ratings = get_post_meta( $postId, 'postratings', true );
+    /**
+     * Gets a rating
+     *
+     * @param $postId
+     * @param string $key
+     * @param bool $summary
+     * @return array
+     */
+    public static function getRating( $postId, $key = '', $summary = false ) {
+        if ( !$summary ) {
+            $metaKey = !empty( $key ) ? '_postratings_' . $key : '_postratings';
+            $ratings = get_post_meta( $postId, $metaKey, true );
+        } else {
+            // load all ratings
+            $allMeta = get_post_meta( $postId, '', true );
+            $ratings = array();
+
+            foreach ( $allMeta as $metaKey => $data ) {
+                if ( strpos( $metaKey, '_postratings' ) === 0 ) {
+                    foreach ( $data as $row ) {
+                        $row = unserialize( $row );
+                        $ratings = array_merge( $ratings, $row );
+                    }
+                }
+            }
+        }
 
         if ( empty( $ratings ) ) {
             // currently no ratings
@@ -92,30 +116,41 @@ class Postratings {
                 'ratingCount' => 0,
                 'ratingResult' => 0,
                 'ratingAll' => 0,
+                'key' => $key,
             );
         }
 
         $ratingAll = 0;
+        $countRatings = 0;
         // loop all ratings to get full rating
         foreach ( $ratings as $rating ) {
+            if ( empty( $rating['rating'] ) ) {
+                continue;
+            }
             // contains: userid, ip, rating, time
             $ratingAll += $rating['rating'];
+            $countRatings+=1;
         }
 
         // calculate average rating
-        $ratingResult = round( $ratingAll / count( $ratings ), 1 );
+        $ratingResult = 0;
+        if ( $countRatings ) {
+            $ratingResult = round( $ratingAll / $countRatings, 1 );
+        }
         return array(
             'postid' => $postId,
-            'ratingCount' => count( $ratings ),
+            'ratingCount' => $countRatings,
             'ratingResult' => $ratingResult,
             'ratingAll' => $ratingAll,
+            'key' => $key,
         );
     }
 
     public static function getResultHtml( $rating ) {
         $output = '';
 
-        $output .= '<div class="postratings" 
+        $output .= '<div class="postratings ' . ( !empty( $rating['class'] ) ? $rating['class'] : '' ) . '" 
+            data-key="' . $rating['key'] . '"
             data-postid="' . $rating['postid'] . '"
             data-rating="' . $rating['ratingResult'] . '"
             data-ratingall="' . $rating['ratingAll'] . '"
@@ -134,7 +169,7 @@ class Postratings {
         $output = '';
         for ( $i = 1; $i < 6; $i += 1 ) {
             $starClass = ' postrating-star-empty';
-            if ( $i < $rating['ratingResult'] ) {
+            if ( $i <= $rating['ratingResult'] ) {
                 $starClass = ' postrating-star-full';
             } else if ( $i - 0.25 < $rating['ratingResult'] ) {
                 $starClass = ' postrating-star-threequarter';
@@ -268,6 +303,8 @@ class Postratings {
             'onlyLoggedIn' => get_theme_mod( 'postratings_onlyLoggedIn', false ),
             'noDashicons' => get_theme_mod( 'postratings_noDashicons', false ),
             'noDefaultStyle' => get_theme_mod( 'postratings_noDefaultStyle', false ),
+            'commentFields' => explode( "\n", get_theme_mod( 'postratings_commentFields', '' ) ),
+            'showCommentSummary' => get_theme_mod( 'postratings_showCommentSummary', false ),
         );
     }
 }

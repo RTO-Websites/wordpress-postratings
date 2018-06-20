@@ -13,6 +13,11 @@
   cursor: pointer;
 }
 
+.no-action .postrating-star {
+  cursor: default;
+  pointer-events: none;
+}
+
 .postrating-star:after {
   content: "\f154";
 }

@@ -23,6 +23,13 @@ Simple plugin to add star-rating to posts via  shortcode.
 
 == Frequently Asked Questions ==
 
+
+= Can use multiple star-fields? =
+Yes, you just have to use different keys in the shortcode:
+[postrating key=MyFirstField]
+[postrating key=MySecondField]
+
+
 = I need a callback for rating-success =
 
 Just use
@@ -40,6 +47,11 @@ Yes, just set it in the shortcode
 
 
 == Changelog ==
+
+= 2.0 =
+* Multiple star-fields now possible
+* Attach to comments possible
+
 
 = 1.0 =
 * Release

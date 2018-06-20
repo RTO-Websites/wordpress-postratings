@@ -43,6 +43,17 @@ class PostratingsThemeCustomizer {
                         'label' => __( 'Don´t load default styles', $this->textdomain ),
                         'default' => false,
                     ),
+
+                    'commentFields' => array(
+                        'type' => 'textarea',
+                        'label' => __( 'Fields for Comments (on per Line)', $this->textdomain ),
+                        'default' => '',
+                    ),
+                    'showCommentSummary' => array(
+                        'type' => 'checkbox',
+                        'label' => __( 'Show summary in comments', $this->textdomain ),
+                        'default' => false,
+                    ),
                 ),
             );
     }

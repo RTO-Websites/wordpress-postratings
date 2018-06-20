@@ -68,7 +68,7 @@ class PostratingsAdmin {
 
         $this->pluginName = $pluginName;
         $this->version = $version;
-        $this->options =  Postratings::getOptions();
+        $this->options = Postratings::getOptions();
         // add options to customizer
         add_action( 'customize_register', array( new \PostratingsThemeCustomizer(), 'actionCustomizeRegister' ) );
 
@@ -85,63 +85,53 @@ class PostratingsAdmin {
             );
         } );
 
-        /* $postgratingsPage = new MagicAdminPage(
-            'post-ratings',
-            'PostRatings',
-            'PostRatings',
-            null,
-            'dashicons-star-half'
-        );
-
-        $postgratingsPage->addFields( array(
-            'mainSettings' => array(
-                'type' => 'headline',
-                'title' => __( 'Main-Settings', $this->textdomain ),
-            ),
-
-            'onlyLoggedIn' => array(
-                'type' => 'checkbox',
-                'title' => __( 'Only logged users can vote', $this->textdomain ),
-                'default' => false,
-            ),
-
-            'noDashicons' => array(
-                'type' => 'checkbox',
-                'title' => __( 'Don´t load dashicons', $this->textdomain ),
-                'default' => false,
-            ),
-
-            'noDefaultStyle' => array(
-                'type' => 'checkbox',
-                'title' => __( 'Don´t load default styles', $this->textdomain ),
-                'default' => false,
-            ),
-        ) ); */
-
-
         // Register ajax
-        add_action( 'wp_ajax_postrating', array( $this, 'addRating' ) );
-        add_action( 'wp_ajax_nopriv_postrating', array( $this, 'addRating' ) );
+        add_action( 'wp_ajax_postrating', array( $this, 'saveRating' ) );
+        add_action( 'wp_ajax_nopriv_postrating', array( $this, 'saveRating' ) );
+
     }
 
-    public function addRating() {
-        header( 'Content-Type: application/json' );
+    /**
+     * Save rating to post-meta
+     *
+     * @param null $values
+     */
+    public function saveRating( $values = null, $noEcho = false ) {
+        if ( !$noEcho ) {
+            header( 'Content-Type: application/json' );
+        }
 
-        $postId = filter_input( INPUT_GET, 'postid' );
-        $rating = filter_input( INPUT_GET, 'rating' );
-        $ratings = get_post_meta( $postId, 'postratings', true );
+        if ( empty( $values ) ) {
+            $values = [];
+            $values['postId'] = filter_input( INPUT_GET, 'postid' );
+            $values['rating'] = filter_input( INPUT_GET, 'rating' );
+            $values['ratingKey'] = filter_input( INPUT_GET, 'key' );
+        }
+
+        $metaKey = !empty( $values['ratingKey'] ) ? '_postratings_' . $values['ratingKey'] : '_postratings';
+        $ratings = get_post_meta( $values['postId'], $metaKey, true );
         $message = '';
 
-        if ( empty( $postId ) || !filter_has_var( INPUT_GET, 'rating' ) ) {
-            exit();
+        if ( empty( $values['postId'] ) || empty( $values['rating'] ) ) {
+            if ( !$noEcho ) {
+                echo $this->getResultOutput( $values['postId'], false, $values['ratingKey'],'Rating empty' );
+                exit();
+            } else {
+                return;
+            }
         }
 
         $currentUser = get_current_user_id();
 
         if ( empty( $currentUser ) && !empty( $this->options['onlyLoggedIn'] ) ) {
             // login required -> abort
-            echo $this->getResultOutput( $postId, false, 'Login required' );
-            exit();
+
+            if ( !$noEcho ) {
+                echo $this->getResultOutput( $values['postId'], false, $values['ratingKey'], 'Login required' );
+                exit();
+            } else {
+                return;
+            }
         }
 
         if ( empty( $ratings ) ) {
@@ -153,7 +143,7 @@ class PostratingsAdmin {
         $newRating = array(
             'userid' => $currentUser,
             'ip' => $_SERVER['REMOTE_ADDR'],
-            'rating' => $rating,
+            'rating' => $values['rating'],
             'time' => time(),
         );
 
@@ -169,8 +159,7 @@ class PostratingsAdmin {
 
             if ( empty( $currentUser )
                 && $rating['ip'] == $_SERVER['REMOTE_ADDR']
-                && $rating['time'] +  86400  > time() )
-            {
+                && $rating['time'] + 86400 > time() ) {
                 // already voted last 24h -> replace rating
                 $addNew = false;
                 $ratings[$key] = $newRating;
@@ -184,16 +173,18 @@ class PostratingsAdmin {
         }
 
         // write to post-meta
-        update_post_meta( $postId, 'postratings', $ratings );
+        update_post_meta( $values['postId'], $metaKey, $ratings );
 
-        echo $this->getResultOutput( $postId, true, $message );
-        exit();
+        if ( !$noEcho ) {
+            echo $this->getResultOutput( $values['postId'], true, $values['ratingKey'], $message );
+            exit();
+        }
     }
 
-    private function getResultOutput( $postId, $success = true, $message = '' ) {
+    private function getResultOutput( $postId, $success = true, $key, $message = '' ) {
         $currentUser = get_current_user_id();
         // load new ratings and html for stars
-        $newRatings = Postratings::getRating( $postId );
+        $newRatings = Postratings::getRating( $postId, $key );
         $newRatings['html'] = Postratings::getStarHtml( $newRatings );
         $newRatings['success'] = $success;
         $newRatings['message'] = $message;
