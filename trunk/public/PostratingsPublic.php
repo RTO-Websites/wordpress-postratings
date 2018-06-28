@@ -51,6 +51,8 @@ class PostratingsPublic {
      */
     private $options;
 
+    private $textdomain;
+
     /**
      * Initialize the class and set its properties.
      *
@@ -61,6 +63,7 @@ class PostratingsPublic {
     public function __construct( $pluginName, $version ) {
 
         $this->pluginName = $pluginName;
+        $this->textdomain = $pluginName;
         $this->version = $version;
         $this->options = Postratings::getOptions();
 
@@ -113,7 +116,7 @@ class PostratingsPublic {
         }
 
         foreach ( $ratings as $key => $rating ) {
-            $label = !empty( $this->options['commentFields'][$key] ) ? $this->options['commentFields'][$key] : __( $key );
+            $label = !empty( $this->options['commentFields'][$key] ) ? $this->options['commentFields'][$key] : __( $key, $this->textdomain );
 
             if ( is_array( $rating ) && !empty( $rating['count'] ) ) {
                 $rating = $rating['rating'] / $rating['count'];
@@ -134,7 +137,7 @@ class PostratingsPublic {
             }
         }
 
-        return $output . $content;
+        return $content . $output;
 
     }
 
