@@ -137,7 +137,7 @@ class PostratingsPublic {
             }
         }
 
-        return $content . $output;
+        return $output . $content;
 
     }
 
@@ -203,7 +203,7 @@ class PostratingsPublic {
 
             $output .= '<div class="postrating-field">';
             $output .= '<div class="postrating-label">' . $label . '</div>';
-            $output .= do_shortcode( '[postrating key=' . $key . ' nosubmit value=1]' );
+            $output .= do_shortcode( '[postrating key=' . $key . ' nosubmit value=0]' );
             $output .= '</div>';
         }
 
@@ -215,6 +215,7 @@ class PostratingsPublic {
      *  Args:
      *   key (for more than one field)
      *   nosubmit: disable ajax-submit
+     *   noaction: disable ajax-submit and disable hover&click effect
      *
      * @param $args
      * @param string $content
@@ -225,16 +226,16 @@ class PostratingsPublic {
             $args = array();
         }
         $postId = $this->getPostIdFromArgs( $args );
-        $isSummaray = in_array( 'summary', $args, true );
+        $isSummary = in_array( 'summary', $args, true );
         $key = !empty( $args['key'] ) ? $args['key'] : '';
-        $rating = Postratings::getRating( $postId, $key, $isSummaray );
+        $rating = Postratings::getRating( $postId, $key, $isSummary );
         $rating['class'] = '';
 
         if ( in_array( 'nosubmit', $args, true ) ) {
             $rating['class'] = ' no-submit';
         }
         if ( in_array( 'noaction', $args, true )
-            || $isSummaray
+            || $isSummary
         ) {
             $rating['class'] .= ' no-action';
         }

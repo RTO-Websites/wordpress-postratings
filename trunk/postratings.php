@@ -20,7 +20,7 @@ use Inc\PostratingsDeactivator;
  * Plugin Name:       PostRatings
  * Plugin URI:        https://github.com/RTO-Websites/wordpress-postratings
  * Description:       Simple plugin to add star-rating to posts
- * Version:           2.0.0
+ * Version:           2.0.1
  * Author:            rtowebsites
  * Author URI:        https://www.rto.de
  * License:           GPL-2.0+
