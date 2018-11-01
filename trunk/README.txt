@@ -3,7 +3,7 @@ Contributors: rtowebsites
 Donate link: https://www.rto.de
 Tags: comments, spam
 Requires at least: 3.0.1
-Tested up to: 3.4
+Tested up to: 5.0
 Stable tag: 4.3
 Keywords: post, ratings, rto, rto.de
 License: GPLv2 or later
